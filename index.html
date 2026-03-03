@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado — Técnico em Informática</title>
+    <meta name="description"
+        content="Simulado online para o processo seletivo - Cargo: Técnico em Informática. 25 questões por tentativa com banco de 100 questões.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="main.css">
+</head>
+
+<body>
+
+    <!-- TELA 1: Landing -->
+    <div id="tela1" class="tela ativa">
+        <div class="card" style="text-align:center;padding:48px 32px">
+            <div class="logo">
+                <div class="logo-icon">S</div>
+                <div class="logo-text" style="font-size:16px">Processo Seletivo<span>Técnico em
+                        Informática</span></div>
+            </div>
+            <div class="instrucao" style="text-align:left">
+                Você responderá <strong>25 questões</strong> sorteadas aleatoriamente de um banco de questões. Ao final,
+                veja seu resultado e revise as questões que errou. Boa sorte!
+            </div>
+            <div class="campo" style="text-align:left">
+                <label for="inputNome">Nome completo do candidato</label>
+                <input type="text" id="inputNome" placeholder="Digite seu nome completo" autocomplete="name">
+            </div>
+            <button class="btn btn-destaque" style="width:100%;justify-content:center;font-size:18px;padding:16px"
+                onclick="iniciarSimulado()">🚀 Iniciar Simulado</button>
+            <div id="historicoContainer" class="historico" style="text-align:left"></div>
+        </div>
+    </div>
+
+    <!-- TELA 2: Simulado -->
+    <div id="tela2" class="tela">
+        <div class="logo" style="margin-bottom:16px">
+            <div class="logo-icon" style="width:40px;height:40px;font-size:20px">S</div>
+            <div class="logo-text" style="font-size:16px">Simulado<span style="font-size:11px">Técnico em
+                    Informática</span></div>
+        </div>
+        <div class="progresso-container">
+            <div class="progresso-label"><span id="progLabel">Questão 1 de 25</span><span id="progPerc">0%</span></div>
+            <div class="progresso-barra">
+                <div id="progFill" class="progresso-fill" style="width:0%"></div>
+            </div>
+        </div>
+        <div id="questaoCard" class="card card-questao"></div>
+        <div class="wizard-nav">
+            <button id="btnAnterior" class="btn btn-secundario" onclick="navegar(-1)">← Anterior</button>
+            <button id="btnEntrega" class="btn btn-destaque" onclick="tentarEntregar()" style="display:none">✅ Confirmar
+                Entrega</button>
+            <button id="btnProxima" class="btn btn-primario" onclick="navegar(1)">Próxima →</button>
+        </div>
+        <div id="mapaContainer" class="mapa-container">
+            <button class="btn btn-secundario mapa-toggle" onclick="toggleMapa()"
+                style="width:100%;justify-content:center;margin-bottom:10px">📋 Ver Mapa de Questões</button>
+            <div class="mapa-titulo">Mapa de Questões</div>
+            <div id="mapaQuestoes" class="mapa"></div>
+        </div>
+    </div>
+
+    <!-- TELA 3: Confirmação -->
+    <div id="tela3" class="tela">
+        <div class="card" style="text-align:center">
+            <div class="logo" style="justify-content:center">
+                <div class="logo-icon" style="width:40px;height:40px;font-size:20px">S</div>
+                <div class="logo-text" style="font-size:16px">Confirmação de Entrega</div>
+            </div>
+            <div class="confirmacao-info">
+                <div class="numero-grande" id="confirmRespondidas">25</div>
+                <p id="confirmMsg">de 25 questões respondidas</p>
+            </div>
+            <p id="confirmAlerta" style="color:var(--vermelho-erro);font-weight:600;margin-bottom:16px;display:none">
+            </p>
+            <div class="confirmacao-btns">
+                <button class="btn btn-secundario" onclick="voltarRevisar()">← Voltar e Revisar</button>
+                <button class="btn btn-destaque" onclick="confirmarEntrega()">✅ Confirmar e Ver Resultado</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA 4: Resultado -->
+    <div id="tela4" class="tela">
+        <div class="card">
+            <div class="logo" style="justify-content:center">
+                <div class="logo-icon" style="width:40px;height:40px;font-size:20px">S</div>
+                <div class="logo-text" style="font-size:16px">Resultado do Simulado</div>
+            </div>
+            <p style="text-align:center;font-size:15px;color:#666" id="resultNome"></p>
+            <div class="resultado-hero">
+                <div id="resultPerc" class="resultado-perc">0%</div>
+                <div id="resultStatus" class="resultado-status"></div>
+                <div class="resultado-detalhes">
+                    <div class="resultado-detalhe">
+                        <div class="num" id="resultAcertos">0</div>
+                        <div class="lbl">Acertos</div>
+                    </div>
+                    <div class="resultado-detalhe">
+                        <div class="num" id="resultErros">0</div>
+                        <div class="lbl">Erros</div>
+                    </div>
+                    <div class="resultado-detalhe">
+                        <div class="num">25</div>
+                        <div class="lbl">Total</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="errosSection" class="erros-section"></div>
+        <div class="resultado-acoes">
+            <button class="btn btn-primario" onclick="refazerSimulado()">🔄 Refazer com Novas Questões</button>
+            <button class="btn btn-destaque" onclick="gerarPDF()">📄 Baixar Prova em PDF</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>
