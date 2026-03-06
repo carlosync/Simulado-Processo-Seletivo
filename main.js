@@ -233,6 +233,16 @@ let questoesDaTentativa = [];
 let respostasCandidato = {};
 let questaoAtualIdx = 0;
 
+/* ===== CRONÔMETRO E PROTEÇÕES ===== */
+let timerInterval = null;
+let tempoRestante = 45 * 60; // 45 minutos em segundos
+let graceTimeout = null;
+let simuladoAtivo = false;
+let contextMenuHandler = null;
+let visibilityHandler = null;
+let beforeUnloadHandler = null;
+let fullscreenHandler = null;
+
 /* ===== NAVEGAÇÃO DE TELAS ===== */
 function mostrarTela(n) {
     document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
@@ -296,6 +306,199 @@ function sortearQuestoes(nome) {
     return disponiveis.slice(0, 25);
 }
 
+/* ===== CRONÔMETRO ===== */
+function iniciarCronometro() {
+    tempoRestante = 45 * 60;
+    const cronEl = document.getElementById('cronometro');
+    cronEl.style.display = 'block';
+    cronEl.className = 'cronometro';
+    atualizarDisplayCronometro();
+    timerInterval = setInterval(function () {
+        tempoRestante--;
+        atualizarDisplayCronometro();
+        if (tempoRestante <= 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            cronEl.className = 'cronometro esgotado';
+            encerrarPorTempo();
+        } else if (tempoRestante <= 5 * 60) {
+            cronEl.className = 'cronometro alerta';
+        }
+    }, 1000);
+}
+
+function atualizarDisplayCronometro() {
+    const min = Math.max(0, Math.floor(tempoRestante / 60));
+    const seg = Math.max(0, tempoRestante % 60);
+    document.getElementById('cronometro').textContent =
+        String(min).padStart(2, '0') + ':' + String(seg).padStart(2, '0');
+}
+
+function pararCronometro() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (graceTimeout) { clearTimeout(graceTimeout); graceTimeout = null; }
+    const banner = document.getElementById('tempoEsgotadoBanner');
+    if (banner) banner.remove();
+    const cronEl = document.getElementById('cronometro');
+    cronEl.style.display = 'none';
+}
+
+function encerrarPorTempo() {
+    // Mostrar banner
+    const banner = document.createElement('div');
+    banner.id = 'tempoEsgotadoBanner';
+    banner.className = 'tempo-esgotado-banner';
+    banner.textContent = '⏰ Tempo esgotado! A prova será encerrada em 30 segundos.';
+    document.body.appendChild(banner);
+    // Grace period de 30 segundos
+    graceTimeout = setTimeout(function () {
+        banner.remove();
+        finalizarSimuladoAutomaticamente();
+    }, 30000);
+}
+
+function finalizarSimuladoAutomaticamente() {
+    removerProtecoes();
+    pararCronometro();
+    // Calcula resultado com as questões respondidas até o momento
+    const resultado = calcularResultado();
+    const aprovado = resultado.percentual >= 80;
+    const dados = getDados(nomeAtual);
+    const tentNum = dados.tentativas.length + 1;
+    const ids = questoesDaTentativa.map(q => q.id);
+    dados.tentativas.push({
+        numero: tentNum, data: new Date().toISOString(), questoesIds: ids,
+        respostas: { ...respostasCandidato }, acertos: resultado.acertos,
+        erros: resultado.erros.length, percentual: resultado.percentual
+    });
+    dados.questoesUsadas = [...new Set([...dados.questoesUsadas, ...ids])];
+    salvarDados(nomeAtual, dados);
+    document.getElementById('resultNome').textContent = '👤 ' + nomeAtual;
+    document.getElementById('resultPerc').textContent = resultado.percentual + '%';
+    document.getElementById('resultPerc').className = 'resultado-perc ' + (aprovado ? 'aprovado' : 'reprovado');
+    document.getElementById('resultStatus').textContent = aprovado ? '✅ Aprovado' : '❌ Não atingiu a média';
+    document.getElementById('resultStatus').className = 'resultado-status ' + (aprovado ? 'aprovado' : 'reprovado');
+    document.getElementById('resultAcertos').textContent = resultado.acertos;
+    document.getElementById('resultErros').textContent = resultado.erros.length;
+    let html = '';
+    if (resultado.erros.length > 0) {
+        html = '<h3>📝 Questões que você errou</h3>';
+        resultado.erros.forEach(e => {
+            const q = e.questao;
+            const marcadas = e.marcado.length > 0 ? e.marcado.join(', ') : 'Nenhuma';
+            html += '<div class="erro-item">';
+            html += `<span class="topico-badge">${q.topico}</span>`;
+            html += `<div class="erro-enunciado">${q.enunciado}</div>`;
+            html += `<div class="erro-resposta erro-marcada">❌ Sua resposta: ${marcadas}${e.marcado.length > 0 ? ' — ' + e.marcado.map(l => q.alternativas[l]).join('; ') : ''}</div>`;
+            html += `<div class="erro-resposta erro-correta">✅ Correta: ${q.correta.join(', ')} — ${q.correta.map(l => q.alternativas[l]).join('; ')}</div>`;
+            if (q.explicacao) html += `<div class="erro-explicacao">💡 ${q.explicacao}</div>`;
+            html += '</div>';
+        });
+    }
+    document.getElementById('errosSection').innerHTML = html;
+    mostrarTela(4);
+}
+
+/* ===== PROTEÇÕES (Conteúdo + Aba + Fullscreen) ===== */
+function enterFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => console.warn('Erro ao abrir tela cheia:', err));
+    }
+}
+
+function exitFullscreen() {
+    if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(err => console.warn('Erro ao sair da tela cheia:', err));
+    }
+}
+
+function adicionarProtecoes() {
+    simuladoAtivo = true;
+    enterFullscreen();
+
+    // Bloquear menu de contexto na área do simulado
+    contextMenuHandler = function (e) { e.preventDefault(); };
+    document.getElementById('tela2').addEventListener('contextmenu', contextMenuHandler);
+    // Detectar troca de aba
+    visibilityHandler = function () {
+        if (!simuladoAtivo) return;
+        if (document.hidden) {
+            // Usar setTimeout para permitir que o confirm() apareça quando o usuário voltar
+            setTimeout(function () {
+                if (!simuladoAtivo) return;
+                const sair = confirm('Atenção! Sair da prova agora encerrará o simulado. Deseja realmente sair?');
+                if (sair) {
+                    // Encerrar simulado e voltar à tela inicial
+                    removerProtecoes();
+                    pararCronometro();
+                    questoesDaTentativa = [];
+                    respostasCandidato = {};
+                    questaoAtualIdx = 0;
+                    mostrarTela(1);
+                }
+                // Se cancelou, não faz nada — volta à prova onde parou
+            }, 100);
+        }
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
+    // Detectar tentativa de fechar/recarregar
+    beforeUnloadHandler = function (e) {
+        if (!simuladoAtivo) return;
+        e.preventDefault();
+        e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+
+    // Detectar saída do modo tela cheia
+    fullscreenHandler = function () {
+        if (!simuladoAtivo) return;
+        if (!document.fullscreenElement) {
+            // Mostrar modal customizado por cima de tudo
+            document.getElementById('overlayFullscreen').style.display = 'flex';
+        }
+    };
+    document.addEventListener('fullscreenchange', fullscreenHandler);
+}
+
+function encerrarPorQuebraRegra() {
+    document.getElementById('overlayFullscreen').style.display = 'none';
+    removerProtecoes();
+    pararCronometro();
+    questoesDaTentativa = [];
+    respostasCandidato = {};
+    questaoAtualIdx = 0;
+    mostrarTela(1);
+}
+
+function retornarTelaCheia() {
+    document.getElementById('overlayFullscreen').style.display = 'none';
+    enterFullscreen();
+}
+
+function removerProtecoes() {
+    simuladoAtivo = false;
+    exitFullscreen();
+
+    if (contextMenuHandler) {
+        const tela2 = document.getElementById('tela2');
+        if (tela2) tela2.removeEventListener('contextmenu', contextMenuHandler);
+        contextMenuHandler = null;
+    }
+    if (visibilityHandler) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+        visibilityHandler = null;
+    }
+    if (beforeUnloadHandler) {
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+        beforeUnloadHandler = null;
+    }
+    if (fullscreenHandler) {
+        document.removeEventListener('fullscreenchange', fullscreenHandler);
+        fullscreenHandler = null;
+    }
+}
+
 /* ===== INICIAR SIMULADO ===== */
 function iniciarSimulado() {
     const nome = document.getElementById('inputNome').value.trim();
@@ -308,6 +511,8 @@ function iniciarSimulado() {
     atualizarMapa();
     atualizarProgresso();
     mostrarTela(2);
+    iniciarCronometro();
+    adicionarProtecoes();
 }
 
 /* ===== RENDERIZAR QUESTÃO ===== */
@@ -433,6 +638,8 @@ function calcularResultado() {
 }
 
 function confirmarEntrega() {
+    removerProtecoes();
+    pararCronometro();
     const resultado = calcularResultado();
     const aprovado = resultado.percentual >= 80;
     // Salvar tentativa
@@ -476,6 +683,8 @@ function confirmarEntrega() {
 
 /* ===== REFAZER ===== */
 function refazerSimulado() {
+    pararCronometro();
+    removerProtecoes();
     questoesDaTentativa = sortearQuestoes(nomeAtual);
     respostasCandidato = {};
     questaoAtualIdx = 0;
@@ -483,6 +692,8 @@ function refazerSimulado() {
     atualizarMapa();
     atualizarProgresso();
     mostrarTela(2);
+    iniciarCronometro();
+    adicionarProtecoes();
 }
 
 /* ===== PDF ===== */
@@ -519,16 +730,26 @@ function gerarPDF() {
         const enumLines = doc.splitTextToSize(q.enunciado, pw);
         doc.text(enumLines, 20, y); y += enumLines.length * 4.5 + 4;
         for (const letra of ['A', 'B', 'C', 'D', 'E']) {
-            checkPage(12);
-            let prefix = `  ${letra}) `;
+            checkPage(14);
             const marcou = (respostasCandidato[q.id] || []).includes(letra);
             const eCorreta = q.correta.includes(letra);
-            if (marcou) prefix += '[MARCADA] ';
-            if (eCorreta) prefix += '[CORRETA] ';
+            let icone = '  ';
+            if (eCorreta) {
+                doc.setTextColor(46, 125, 50); // verde #2E7D32
+                icone = '[V] ';
+            } else if (marcou && !eCorreta) {
+                doc.setTextColor(198, 40, 40); // vermelho #C62828
+                icone = '[X] ';
+            }
+            if (icone.trim()) {
+                doc.text(icone, 22, y);
+                doc.setTextColor(0, 0, 0); // resetar para preto
+            }
+            const prefix = `  ${letra}) `;
             const altLines = doc.splitTextToSize(prefix + q.alternativas[letra], pw - 5);
-            doc.text(altLines, 22, y); y += altLines.length * 4.5 + 1;
+            doc.text(altLines, icone.trim() ? 30 : 22, y); y += altLines.length * 4.5 + 2;
         }
-        y += 6;
+        y += 8;
     });
     // Página final
     doc.addPage(); y = 30;

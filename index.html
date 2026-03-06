@@ -25,7 +25,8 @@
                         Informática</span></div>
             </div>
             <div class="instrucao" style="text-align:left">
-                Você responderá <strong>25 questões</strong> sorteadas aleatoriamente de um banco de questões. Ao final,
+                Você responderá <strong>25 questões</strong> sorteadas aleatoriamente de um banco de questões.<br>
+                <strong>Duração: 45 minutos.</strong> Ao final,
                 veja seu resultado e revise as questões que errou. Boa sorte!
             </div>
             <div class="campo" style="text-align:left">
@@ -45,6 +46,7 @@
             <div class="logo-text" style="font-size:16px">Simulado<span style="font-size:11px">Técnico em
                     Informática</span></div>
         </div>
+        <div id="cronometro" class="cronometro" style="display:none">45:00</div>
         <div class="progresso-container">
             <div class="progresso-label"><span id="progLabel">Questão 1 de 25</span><span id="progPerc">0%</span></div>
             <div class="progresso-barra">
@@ -121,6 +123,19 @@
     </div>
 
     <div id="toast" class="toast"></div>
+
+    <div id="overlayFullscreen" class="overlay-fullscreen" style="display:none">
+        <div class="card" style="text-align:center; max-width: 500px; margin: 20px">
+            <h3 style="color:var(--vermelho-erro); margin-bottom:16px; font-family:'Barlow', sans-serif">⚠️ Saiu da Tela
+                Cheia</h3>
+            <p style="margin-bottom:24px; font-size:16px">Você saiu do modo tela cheia obrigatório para o
+                simulado.<br><br>Se você não retornar, sua prova será encerrada e o progresso perdido.</p>
+            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap">
+                <button class="btn btn-secundario" onclick="encerrarPorQuebraRegra()">Encerrar Simulado (Sair)</button>
+                <button class="btn btn-primario" onclick="retornarTelaCheia()">Retornar à Prova (Tela Cheia)</button>
+            </div>
+        </div>
+    </div>
 
     <script src="main.js"></script>
 </body>
