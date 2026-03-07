@@ -1,6 +1,6 @@
 # 🖥️ Simulado — Processo Seletivo · Técnico em Informática
 
-> Simulado online para candidatos ao cargo de **Técnico em Informática**, com banco de **100 questões** e sorteio aleatório de **25 questões** por tentativa.
+> Simulado online para candidatos ao cargo de **Técnico em Informática**, com banco de **200 questões** e sorteio aleatório de **25 questões** por tentativa.
 
 ---
 
@@ -10,12 +10,12 @@ Este é um simulado desenvolvido em HTML, CSS e JavaScript puro (sem frameworks 
 
 ### ✨ Funcionalidades
 
-- 📚 **Banco com 100 questões** distribuídas em 10 tópicos
+- 📚 **Banco com 200 questões** distribuídas em 14 tópicos, englobando questões de níveis intermediário a avançado
 - 🎲 **Sorteio aleatório** de 25 questões por tentativa (sem repetir questões já usadas)
-- ✅ Questões de **resposta única** (radio) e **múltipla escolha** (checkbox)
+- ✅ Questões de **resposta única** (radio) e **múltipla escolha** (checkbox), incluindo "pegadinhas" técnicas do dia a dia
 - 📊 **Barra de progresso** em tempo real
 - 🗺️ **Mapa de questões** para navegar entre elas
-- 📝 **Revisão de erros** com gabarito e explicações ao final
+- 📝 **Revisão de erros** com gabarito e explicações completas ao final
 - 📄 **Exportação em PDF** da prova completa com gabarito individual
 - 💾 **Histórico de tentativas** salvo localmente no navegador (localStorage)
 - 🔄 Opção de **refazer o simulado** com novas questões automaticamente
@@ -26,19 +26,21 @@ Este é um simulado desenvolvido em HTML, CSS e JavaScript puro (sem frameworks 
 
 | # | Tópico | Qtd. de Questões |
 |---|--------|-----------------|
-| 1 | Sistemas Operacionais | 10 |
-| 2 | Hardware | 8 |
-| 3 | Manutenção de Computador | 8 |
-| 4 | Softwares Mais Comuns | 7 |
-| 5 | Pacote Office | 12 |
-| 6 | Ferramentas Corporativas | 7 |
-| 7 | Serviços de Internet | 8 |
-| 8 | Redes de Computadores | 10 |
-| 9 | Atalhos do Windows, Office e Navegadores | 8 |
-| 10 | Segurança da Informação | 12 |
-| 11 | Suporte Técnico | 5 |
-| 12 | Atendimento ao Usuário | 5 |
-| **Total** | | **100** |
+| 1 | Sistemas Operacionais | 17 |
+| 2 | Hardware | 15 |
+| 3 | Manutenção de Computador | 15 |
+| 4 | Softwares Mais Comuns | 12 |
+| 5 | Pacote Office | 19 |
+| 6 | Ferramentas Corporativas | 13 |
+| 7 | Serviços de Internet | 14 |
+| 8 | Redes de Computadores | 17 |
+| 9 | Atalhos do Windows, Office e Navegadores | 14 |
+| 10 | Segurança da Informação | 19 |
+| 11 | Suporte Técnico | 11 |
+| 12 | Atendimento ao Usuário | 11 |
+| 13 | Virtualização | 11 |
+| 14 | Processos do Windows | 12 |
+| **Total** | | **200** |
 
 ---
 
